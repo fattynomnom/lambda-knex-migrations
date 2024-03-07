@@ -1,0 +1,14 @@
+version: '3.7'
+services:
+  aws-cdk:
+    image: node:18
+    volumes:
+      - ./.aws-cdk/:/cdk
+    working_dir: /cdk
+    entrypoint: ['/bin/sh', '-c']
+    environment:
+      - STACK_NAME
+    command: >
+      "npm install
+      && npm install -g aws-cdk
+      && cdk deploy $${STACK_NAME} --require-approval never"

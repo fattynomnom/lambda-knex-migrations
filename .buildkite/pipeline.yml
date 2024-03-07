@@ -1,0 +1,38 @@
+steps:
+  - label: Deploy AWS CDK staging
+    agents:
+      queue: staging-queue
+    plugins:
+      - docker-compose#v4.15.0:
+          run: aws-cdk
+          config: docker-compose-aws-cdk.yml
+          env:
+            - STACK_NAME=rds-database-staging
+
+  - label: 🚀 Invoke migrator function
+    agents:
+      queue: staging-queue
+    command: scripts/invokeLambda.sh
+    artifact_paths:
+      - scripts/output.json
+
+  - wait
+
+  - block: 🙋🏻 Deploy Prod
+    branches: ${BUILDKITE_PIPELINE_DEFAULT_BRANCH}
+
+  - label: Deploy AWS CDK staging
+    branches: ${BUILDKITE_PIPELINE_DEFAULT_BRANCH}
+    plugins:
+      - docker-compose#v4.15.0:
+          run: aws-cdk
+          config: docker-compose-aws-cdk.yml
+          env:
+            - STACK_NAME=rds-database-prod
+
+  - label: 🚀 Invoke migrator function
+    agents:
+      queue: prod-queue
+    command: scripts/invokeLambda.sh
+    artifact_paths:
+      - scripts/output.json
